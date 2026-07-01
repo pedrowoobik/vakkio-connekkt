@@ -15,7 +15,7 @@ import os, sys, json, argparse, subprocess, getpass
 import urllib.request, urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_API = 'https://sparkk.woobik.dev/api'
+DEFAULT_API = 'https://vakkio.woobik.dev/api'
 CONF_PATHS = [
     '/boot/firmware/vakkio-agent.conf',
     '/boot/vakkio-agent.conf',

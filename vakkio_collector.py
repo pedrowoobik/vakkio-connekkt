@@ -15,7 +15,7 @@ cur_power /10 = W, add_ele /1000 = kWh.
 Config en vakkio.env:
   TUYA_ACCESS_ID / TUYA_ACCESS_SECRET / TUYA_REGION   (credenciales, LOCALES)
   VAKKIO_TOKEN           token del agente (auth de agente e ingesta)
-  VAKKIO_API             base de la API (def. https://sparkk.woobik.dev/api)
+  VAKKIO_API             base de la API (def. https://vakkio.woobik.dev/api)
   INTERVAL               segundos entre lecturas (def. 60)
   INVENTORY_EVERY        cada cuántos ciclos re-reportar inventario (def. 15)
   TUYA_DEVICE_IDS        SOLO fallback si el backend no responde (opcional)
@@ -33,7 +33,7 @@ for line in open(CFG):
     if '=' in line and not line.startswith('#'):
         k, v = line.split('=', 1); c[k] = v
 
-API             = c.get('VAKKIO_API', 'https://sparkk.woobik.dev/api').rstrip('/')
+API             = c.get('VAKKIO_API', 'https://vakkio.woobik.dev/api').rstrip('/')
 TOKEN           = c['VAKKIO_TOKEN']
 INTERVAL        = int(c.get('INTERVAL', '60'))
 INVENTORY_EVERY = int(c.get('INVENTORY_EVERY', '15'))

@@ -1,6 +1,6 @@
 # Vakkio Connekkt
 
-Agente local de **[Vakkio](https://sparkk.woobik.dev)** — la "cajita" (o contenedor)
+Agente local de **[Vakkio](https://vakkio.woobik.dev)** — la "cajita" (o contenedor)
 que corre en casa del usuario, descubre sus dispositivos (hoy **Tuya / SmartLife**) y
 envía su consumo a Vakkio. Se gestiona **desde la web** (elegir qué monitorizar) —
 sin SSH ni tocar ficheros una vez emparejado.

@@ -14,5 +14,5 @@ TUYA_ACCESS_SECRET=
 TUYA_REGION=eu
 
 # --- opcionales ---
-# VAKKIO_API=https://sparkk.woobik.dev/api   # base de la API (por defecto ya apunta a producción)
+# VAKKIO_API=https://vakkio.woobik.dev/api   # base de la API (por defecto ya apunta a producción)
 # RUN_AS=pi                                  # usuario del servicio systemd (def. pi)
