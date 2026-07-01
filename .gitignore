@@ -1,0 +1,14 @@
+# entorno y secretos (nunca al repo)
+venv/
+.env
+vakkio.env
+vakkio-agent.conf
+vakkio_cache.json
+
+# python
+__pycache__/
+*.pyc
+
+# varios
+*.bak
+.DS_Store

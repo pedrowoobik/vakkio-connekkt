@@ -1,0 +1,31 @@
+# Vakkio Connekkt · agente local (Docker). Corre en cualquier caja Linux encendida 24/7.
+#
+#   1) genera un código en la web: Dispositivos → Integraciones → Vincular agente
+#   2) copia .env.example a .env y rellénalo (código + credenciales Tuya)
+#   3) docker compose up -d
+#
+# Incluye Watchtower: mantiene el agente ACTUALIZADO solo (comprueba si hay imagen
+# nueva cada hora y reinicia el contenedor). El código de emparejamiento solo hace
+# falta el PRIMER arranque; luego el token queda en el volumen.
+services:
+  vakkio-connekkt:
+    image: ghcr.io/pedrowoobik/vakkio-connekkt:latest
+    # si prefieres construir en local en vez de bajar la imagen, comenta 'image' y descomenta:
+    # build: .
+    container_name: vakkio-connekkt
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - vakkio-data:/data
+
+  # actualización automática del agente (recomendado; quítalo si no lo quieres)
+  watchtower:
+    image: containrrr/watchtower
+    container_name: vakkio-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --cleanup --interval 3600 vakkio-connekkt
+
+volumes:
+  vakkio-data:

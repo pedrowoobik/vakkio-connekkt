@@ -1,0 +1,18 @@
+# Vakkio Connekkt · configuración del agente.
+# Copia este fichero a "vakkio-agent.conf" (o hornéalo en la partición /boot al
+# flashear la SD para un arranque 100% headless) y rellena los valores.
+
+# Código de emparejamiento: se genera en la web de Vakkio en
+#   Dispositivos → Integraciones → Vincular agente
+# Es de un solo uso y caduca en ~15 min.
+PAIRING_CODE=XXXX-XXXX
+
+# Credenciales de Tuya Cloud (iot.tuya.com). SE QUEDAN EN LOCAL, nunca se
+# envían al backend. Región: eu | us | cn | in
+TUYA_ACCESS_ID=
+TUYA_ACCESS_SECRET=
+TUYA_REGION=eu
+
+# --- opcionales ---
+# VAKKIO_API=https://sparkk.woobik.dev/api   # base de la API (por defecto ya apunta a producción)
+# RUN_AS=pi                                  # usuario del servicio systemd (def. pi)
