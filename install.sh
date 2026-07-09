@@ -20,9 +20,9 @@ if [ ! -d "$DIR/venv" ]; then
   echo "· creando entorno virtual…"
   python3 -m venv "$DIR/venv"
 fi
-echo "· instalando librerías Python (tinytuya, requests)…"
+echo "· instalando librerías Python (tinytuya, python-kasa, requests)…"
 "$DIR/venv/bin/pip" install --quiet --upgrade pip
-"$DIR/venv/bin/pip" install --quiet tinytuya requests
+"$DIR/venv/bin/pip" install --quiet tinytuya "python-kasa>=0.7" requests
 
 echo "· provisioning…"
 "$DIR/venv/bin/python" "$DIR/provision.py" "$@"

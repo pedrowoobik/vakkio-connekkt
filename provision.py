@@ -23,7 +23,9 @@ CONF_PATHS = [
 ]
 ENV_PATH = os.environ.get('VAKKIO_ENV') or os.path.join(HERE, 'vakkio.env')
 SERVICE_PATH = '/etc/systemd/system/vakkio-connekkt.service'
-ENV_KEYS = ['PAIRING_CODE', 'VAKKIO_API', 'TUYA_ACCESS_ID', 'TUYA_ACCESS_SECRET', 'TUYA_REGION', 'RUN_AS']
+ENV_KEYS = ['PAIRING_CODE', 'VAKKIO_API', 'COLLECTOR', 'RUN_AS',
+            'TUYA_ACCESS_ID', 'TUYA_ACCESS_SECRET', 'TUYA_REGION',
+            'TAPO_USER', 'TAPO_PWD', 'TAPO_BROADCAST', 'TAPO_HOSTS']
 
 
 def read_conf():
@@ -75,31 +77,37 @@ def write_env(env):
     print(f"· credenciales guardadas (local, chmod 600) en {ENV_PATH}")
 
 
-def install_service(run_as):
+def install_service(run_as, collector):
     py = os.path.join(HERE, 'venv', 'bin', 'python')
     if not os.path.exists(py):
         py = sys.executable
+    script = 'tapo_collector.py' if collector == 'tapo' else 'vakkio_collector.py'
+    name = 'vakkio-connekkt' if collector == 'tuya' else f'vakkio-connekkt-{collector}'
+    path = f'/etc/systemd/system/{name}.service'
     unit = f"""[Unit]
-Description=Vakkio Connekkt · agente colector (control-plane)
+Description=Vakkio Connekkt · colector {collector} (control-plane)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 User={run_as}
+Environment=COLLECTOR={collector}
+Environment=VAKKIO_ENV={ENV_PATH}
+Environment=PYTHONUNBUFFERED=1
 WorkingDirectory={HERE}
-ExecStart={py} {os.path.join(HERE, 'vakkio_collector.py')}
+ExecStart={py} {os.path.join(HERE, script)}
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
 """
-    with open(SERVICE_PATH, 'w') as f:
+    with open(path, 'w') as f:
         f.write(unit)
     subprocess.run(['systemctl', 'daemon-reload'], check=True)
-    subprocess.run(['systemctl', 'enable', '--now', 'vakkio-connekkt.service'], check=True)
-    print("· servicio systemd 'vakkio-connekkt' instalado y arrancado")
+    subprocess.run(['systemctl', 'enable', '--now', f'{name}.service'], check=True)
+    print(f"· servicio systemd '{name}' instalado y arrancado")
 
 
 def main():
@@ -109,6 +117,9 @@ def main():
     ap.add_argument('--tuya-id')
     ap.add_argument('--tuya-secret')
     ap.add_argument('--tuya-region', help='eu/us/cn/in')
+    ap.add_argument('--collector', help='integración: tuya (def.) | tapo')
+    ap.add_argument('--tapo-user', help='email de la cuenta TP-Link/Tapo')
+    ap.add_argument('--tapo-pwd', help='contraseña de la cuenta Tapo')
     ap.add_argument('--no-service', action='store_true', help='no instalar el servicio systemd')
     a = ap.parse_args()
 
@@ -116,30 +127,42 @@ def main():
     for key in ENV_KEYS:                         # 2) variables de entorno
         if os.environ.get(key):
             conf[key] = os.environ[key]
-    for key, val in {'PAIRING_CODE': a.code, 'VAKKIO_API': a.api, 'TUYA_ACCESS_ID': a.tuya_id,
-                     'TUYA_ACCESS_SECRET': a.tuya_secret, 'TUYA_REGION': a.tuya_region}.items():
+    for key, val in {'PAIRING_CODE': a.code, 'VAKKIO_API': a.api, 'COLLECTOR': a.collector,
+                     'TUYA_ACCESS_ID': a.tuya_id, 'TUYA_ACCESS_SECRET': a.tuya_secret,
+                     'TUYA_REGION': a.tuya_region, 'TAPO_USER': a.tapo_user, 'TAPO_PWD': a.tapo_pwd}.items():
         if val:                                  # 1) flags CLI (mayor prioridad)
             conf[key] = val
 
+    collector = (conf.get('COLLECTOR') or 'tuya').lower()
     api = conf.get('VAKKIO_API', DEFAULT_API)
     code = ask(conf, 'PAIRING_CODE', 'Código de emparejamiento (de la web de Vakkio): ')
-    tid = ask(conf, 'TUYA_ACCESS_ID', 'Tuya Access ID: ')
-    tsec = ask(conf, 'TUYA_ACCESS_SECRET', 'Tuya Access Secret: ', secret=True)
-    treg = ask(conf, 'TUYA_REGION', 'Región Tuya (eu/us/cn/in) [eu]: ', default='eu') or 'eu'
+
+    # Credenciales de la plataforma — SIEMPRE locales, nunca van al backend.
+    env = {}
+    if collector == 'tapo':
+        env['TAPO_USER'] = ask(conf, 'TAPO_USER', 'Email de tu cuenta Tapo/TP-Link: ')
+        env['TAPO_PWD'] = ask(conf, 'TAPO_PWD', 'Contraseña Tapo: ', secret=True)
+        for opt in ('TAPO_BROADCAST', 'TAPO_HOSTS'):   # descubrimiento (opcional)
+            if conf.get(opt):
+                env[opt] = conf[opt]
+    else:
+        env['TUYA_ACCESS_ID'] = ask(conf, 'TUYA_ACCESS_ID', 'Tuya Access ID: ')
+        env['TUYA_ACCESS_SECRET'] = ask(conf, 'TUYA_ACCESS_SECRET', 'Tuya Access Secret: ', secret=True)
+        env['TUYA_REGION'] = ask(conf, 'TUYA_REGION', 'Región Tuya (eu/us/cn/in) [eu]: ', default='eu') or 'eu'
 
     print(f"· canjeando el código en {api} …")
     res = redeem(api, code)
     if res.get('status') != 'ok' or not res.get('token'):
         sys.exit(f"✗ emparejamiento fallido: {res}")
-    print(f"✓ vinculado a la propiedad {res.get('property_id')} (source={res.get('source')})")
+    src = res.get('source')
+    print(f"✓ vinculado a la propiedad {res.get('property_id')} (source={src})")
+    if src and src != collector:
+        print(f"⚠ el código era para '{src}' pero COLLECTOR={collector}. Usa el código de la "
+              f"integración correcta (Dispositivos → {collector} → Conectar/Vincular).")
 
-    write_env({
-        'VAKKIO_API': res.get('api_base', api),
-        'VAKKIO_TOKEN': res['token'],
-        'TUYA_ACCESS_ID': tid,
-        'TUYA_ACCESS_SECRET': tsec,
-        'TUYA_REGION': treg,
-    })
+    env['VAKKIO_API'] = res.get('api_base', api)
+    env['VAKKIO_TOKEN'] = res['token']
+    write_env(env)
 
     if a.no_service:
         print("· config lista (--no-service). Para arrancar el colector:")
@@ -152,9 +175,10 @@ def main():
         return
 
     run_as = conf.get('RUN_AS') or os.environ.get('SUDO_USER') or 'pi'
-    install_service(run_as)
+    install_service(run_as, collector)
+    label = 'Tapo' if collector == 'tapo' else 'Tuya'
     print("\n✓ Listo. El agente ya reporta su inventario. Elige qué monitorizar en la web:")
-    print("  Dispositivos → Integraciones → Tuya → Gestionar")
+    print(f"  Dispositivos → Integraciones → {label} → Gestionar")
 
 
 if __name__ == '__main__':

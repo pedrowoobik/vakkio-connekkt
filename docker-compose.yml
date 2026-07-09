@@ -1,22 +1,47 @@
 # Vakkio Connekkt · agente local (Docker). Corre en cualquier caja Linux encendida 24/7.
 #
-#   1) genera un código en la web: Dispositivos → Integraciones → Vincular agente
-#   2) copia .env.example a .env y rellénalo (código + credenciales Tuya)
-#   3) docker compose up -d
+#   1) genera un código en la web por cada integración que quieras:
+#        Tuya → Dispositivos → Integraciones → Vincular agente
+#        Tapo → Dispositivos → TP-Link Tapo → Conectar
+#   2) copia .env.example a .env y rellénalo (códigos + credenciales)
+#   3) arranca SOLO las integraciones que uses, con "profiles":
+#        docker compose --profile tuya up -d
+#        docker compose --profile tapo up -d
+#        docker compose --profile tuya --profile tapo up -d      (ambas)
 #
-# Incluye Watchtower: mantiene el agente ACTUALIZADO solo (comprueba si hay imagen
-# nueva cada hora y reinicia el contenedor). El código de emparejamiento solo hace
-# falta el PRIMER arranque; luego el token queda en el volumen.
+# Cada integración es un contenedor con su propio token en su volumen. Watchtower
+# mantiene todo ACTUALIZADO solo. El código solo hace falta el PRIMER arranque.
 services:
-  vakkio-connekkt:
+  # --- Tuya / SmartLife (nube) ---
+  vakkio-tuya:
     image: ghcr.io/pedrowoobik/vakkio-connekkt:latest
-    # si prefieres construir en local en vez de bajar la imagen, comenta 'image' y descomenta:
+    # para construir en local: comenta 'image' y descomenta 'build: .'
     # build: .
-    container_name: vakkio-connekkt
+    container_name: vakkio-tuya
+    profiles: ["tuya"]
     restart: unless-stopped
     env_file: .env
+    environment:
+      - COLLECTOR=tuya
+      - PAIRING_CODE=${PAIRING_CODE_TUYA:-}
     volumes:
-      - vakkio-data:/data
+      - vakkio-tuya-data:/data
+
+  # --- TP-Link Tapo (LOCAL, protocolo KLAP) ---
+  # host networking: necesario para descubrir los enchufes en tu red local.
+  # Requiere un host LINUX en la MISMA red que los Tapo (no sirve Docker Desktop Mac/Win).
+  vakkio-tapo:
+    image: ghcr.io/pedrowoobik/vakkio-connekkt:latest
+    container_name: vakkio-tapo
+    profiles: ["tapo"]
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    environment:
+      - COLLECTOR=tapo
+      - PAIRING_CODE=${PAIRING_CODE_TAPO:-}
+    volumes:
+      - vakkio-tapo-data:/data
 
   # actualización automática del agente (recomendado; quítalo si no lo quieres)
   watchtower:
@@ -25,7 +50,8 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --cleanup --interval 3600 vakkio-connekkt
+    command: --cleanup --interval 3600
 
 volumes:
-  vakkio-data:
+  vakkio-tuya-data:
+  vakkio-tapo-data:

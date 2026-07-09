@@ -1,17 +1,30 @@
 # Vakkio Connekkt · configuración del agente.
 # Copia este fichero a "vakkio-agent.conf" (o hornéalo en la partición /boot al
 # flashear la SD para un arranque 100% headless) y rellena los valores.
+#
+# Un agente por integración: instala Tuya y/o Tapo con su propio COLLECTOR.
+#   sudo COLLECTOR=tuya ./install.sh
+#   sudo COLLECTOR=tapo ./install.sh
 
-# Código de emparejamiento: se genera en la web de Vakkio en
-#   Dispositivos → Integraciones → Vincular agente
-# Es de un solo uso y caduca en ~15 min.
+# Integración de este agente: tuya (def.) | tapo
+COLLECTOR=tuya
+
+# Código de emparejamiento (web de Vakkio, un solo uso, ~15 min):
+#   Tuya → Dispositivos → Integraciones → Vincular agente
+#   Tapo → Dispositivos → TP-Link Tapo → Conectar
 PAIRING_CODE=XXXX-XXXX
 
-# Credenciales de Tuya Cloud (iot.tuya.com). SE QUEDAN EN LOCAL, nunca se
-# envían al backend. Región: eu | us | cn | in
+# --- Si COLLECTOR=tuya: credenciales de Tuya Cloud (iot.tuya.com). Región: eu|us|cn|in ---
 TUYA_ACCESS_ID=
 TUYA_ACCESS_SECRET=
 TUYA_REGION=eu
+
+# --- Si COLLECTOR=tapo: cuenta TP-Link/Tapo (la de la app Tapo) ---
+# TAPO_USER=tu-email@ejemplo.com
+# TAPO_PWD=tu-contraseña
+# TAPO_BROADCAST=192.168.1.255   # opcional, si el equipo tiene varias interfaces
+
+# Las credenciales SE QUEDAN EN LOCAL, nunca se envían al backend.
 
 # --- opcionales ---
 # VAKKIO_API=https://vakkio.woobik.dev/api   # base de la API (por defecto ya apunta a producción)

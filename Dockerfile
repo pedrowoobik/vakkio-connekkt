@@ -8,9 +8,10 @@ LABEL org.opencontainers.image.title="Vakkio Connekkt" \
       org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app
-RUN pip install --no-cache-dir tinytuya requests
+# tinytuya = enchufes Tuya (nube) · python-kasa = enchufes TP-Link Tapo (local/KLAP)
+RUN pip install --no-cache-dir tinytuya "python-kasa>=0.7" requests
 
-COPY vakkio_collector.py provision.py docker-entrypoint.sh ./
+COPY vakkio_collector.py tapo_collector.py provision.py docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
 
 # el token y la caché viven en el volumen /data (sobreviven reinicios)
